@@ -1,0 +1,9 @@
+version: "3"
+services:
+  9cc:
+    build: .
+    tty: true
+    ports:
+      - 8000:8000
+    volumes:
+      - .:/home/user
