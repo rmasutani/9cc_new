@@ -23,6 +23,22 @@ struct Token
 };
 
 Token *token;
+char *user_input; // プログラムの文字列全体を保存
+
+// 入力全体を表す文字列の途中を指すポインタを受け取る
+void error_at(char *loc, char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+
+    int pos = loc - user_input;
+    fprintf(stderr, "%s\n", user_input);
+    fprintf(stderr, "%*s", pos, " ");
+    fprintf(stderr, "^ ");
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+    exit(1);
+}
 
 void error(char *fmt, ...)
 {
@@ -52,7 +68,7 @@ void expect(char op)
 int expect_number()
 {
     if (token->kind != TK_NUM)
-        error("Not a number.");
+        error_at(token->str, "Not a number.");
     int val = token->val;
     token = token->next;
     return val;
@@ -69,7 +85,7 @@ Token *new_token(TokenKind kind, Token *cur, char *str)
     Token *tok = calloc(1, sizeof(Token));
     tok->kind = kind;
     tok->str = str;
-    cur->next = tok;
+    cur->next = tok; // ここで操作するのはトークンであって文字列ではないことに注意
     return tok;
 }
 
@@ -89,14 +105,14 @@ Token *tokenize(char *p)
 
         if (*p == '+' || *p == '-')
         {
-            cur = new_token(TK_RESERVED, cur, p++);
+            cur = new_token(TK_RESERVED, cur, p++); // ポインタを一つ読み進めてから渡す
             continue;
         }
 
         if (isdigit(*p))
         {
             cur = new_token(TK_NUM, cur, p);
-            cur->val = strtol(p, &p, 10);
+            cur->val = strtol(p, &p, 10); // Reservedの場合は読み進めてから渡すがdigitの場合はvalが必要なのでstrtolで読み進める
             continue;
         }
 
@@ -116,6 +132,17 @@ int main(int argc, char **argv)
     }
 
     token = tokenize(argv[1]);
+    user_input = argv[1];
+
+    printf("Kind: %d\n", token->kind);
+    printf("str: %s\n", token->str);
+    printf("val: %d\n", token->val);
+    printf("\n");
+    printf("next kind: %d\n", token->next->kind);
+    printf("next str: %s\n", token->next->str);
+    printf("next val: %d\n", token->next->val);
+
+    printf("next next val: %d\n", token->next->next->val);
 
     printf(".intel_syntax noprefix\n");
     printf(".globl main\n");
