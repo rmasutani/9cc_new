@@ -103,7 +103,7 @@ Token *tokenize(char *p)
             continue;
         }
 
-        if (*p == '+' || *p == '-')
+        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')')
         {
             cur = new_token(TK_RESERVED, cur, p++); // ポインタを一つ読み進めてから渡す
             continue;
@@ -141,6 +141,10 @@ struct Node
     Node *rhs;
     int val; // kindがNUMのときだけ使う
 };
+
+Node *primary();
+Node *expr();
+Node *mul();
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs)
 {
@@ -201,6 +205,45 @@ Node *primary()
     return new_node_num(expect_number());
 }
 
+// スタック命令のエミュレートを行う関数
+void gen(Node *node)
+{
+    if (node->kind == ND_NUM)
+    {
+        printf("    push %d\n", node->val);
+        return;
+    }
+
+    gen(node->lhs);
+    gen(node->rhs);
+
+    printf("    pop rdi\n");
+    printf("    pop rax\n");
+
+    switch (node->kind)
+    {
+    case ND_ADD:
+        printf("    add rax, rdi\n");
+        break;
+    case ND_SUB:
+        printf("    sub rax, rdi\n");
+        break;
+    case ND_MUL:
+        printf("    imul rax, rdi\n");
+        break;
+    case ND_DIV:
+        // idivは符号あり除算を行う命令。ただし idiv rax, rdi　のようには書けない
+        // idivは暗黙のうちにRDXとRAXを取って、それを合わせたものを128ビット整数とみなして、
+        // それを引数のレジスタの64ビットの値で割り、商をRAXに、余りをRDXにセットする、という
+        // 仕様になっている
+        printf("    cqo\n");
+        printf("    idiv rdi\n");
+        break;
+    }
+
+    printf("  push rax\n");
+}
+
 int main(int argc, char **argv)
 {
     if (argc != 2)
@@ -209,26 +252,17 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    token = tokenize(argv[1]);
     user_input = argv[1];
+    token = tokenize(user_input);
+    Node *node = expr();
 
     printf(".intel_syntax noprefix\n");
     printf(".globl main\n");
     printf("main:\n");
-    printf("    mov rax, %d\n", expect_number());
 
-    while (!at_eof())
-    {
-        if (consume('+'))
-        {
-            printf("    add rax, %d\n", expect_number());
-            continue;
-        }
+    gen(node);
 
-        expect('-');
-        printf("    sub rax, %d\n", expect_number());
-    }
-
+    printf("    pop rax\n");
     printf("    ret\n");
     return 0;
 }
