@@ -20,6 +20,7 @@ struct Token
     Token *next;
     int val;
     char *str;
+    int len;
 };
 
 Token *token;
@@ -50,18 +51,21 @@ void error(char *fmt, ...)
 }
 
 // 次のトークンが期待している記号の時にはトークンを1つ読み進める、それ以外の場合はエラー
-bool consume(char op)
+bool consume(char *op)
 {
-    if (token->kind != TK_RESERVED || token->str[0] != op)
+    if (token->kind != TK_RESERVED ||
+        strlen(op) != token->len ||
+        memcmp(token->str, op, token->len))
         return false;
     token = token->next;
     return true;
 }
 
-void expect(char op)
+void expect(char *op)
 {
-    if (token->kind != TK_RESERVED || token->str[0] != op)
-        error("This is not '%c'.", op);
+    if (token->kind != TK_RESERVED || strlen(op) != token->len ||
+        memcmp(token->str, op, token->len))
+        error_at(token->str, "expected \"%s\"", op);
     token = token->next;
 }
 
@@ -80,17 +84,19 @@ bool at_eof()
 }
 
 // 新しいトークンを作成してcurにつなげる
-Token *new_token(TokenKind kind, Token *cur, char *str)
+Token *new_token(TokenKind kind, Token *cur, char *str, int len)
 {
     Token *tok = calloc(1, sizeof(Token));
     tok->kind = kind;
     tok->str = str;
+    tok->len = len;
     cur->next = tok; // ここで操作するのはトークンであって文字列ではないことに注意
     return tok;
 }
 
 Token *tokenize(char *p)
 {
+    // printf("tokenization start");
     Token head;
     head.next = NULL;
     Token *cur = &head;
@@ -103,23 +109,44 @@ Token *tokenize(char *p)
             continue;
         }
 
+        // 2文字のトークンのマッチを先にやる
+        if (!memcmp(p, "<=", 2) || !memcmp(p, "==", 2) || !memcmp(p, ">=", 2) || !memcmp(p, "!=", 2))
+        {
+            // printf("Checking 2-letter token.");
+            cur = new_token(TK_RESERVED, cur, p, 2);
+            p += 2;
+            continue;
+        }
+
+        //  1文字の比較演算子
+        if (*p == '<' || *p == '>')
+        {
+            // printf("Checking 1-letter token.");
+            cur = new_token(TK_RESERVED, cur, p++, 1);
+            cur->len = 1;
+            continue;
+        }
+
         if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')')
         {
-            cur = new_token(TK_RESERVED, cur, p++); // ポインタを一つ読み進めてから渡す
+            cur = new_token(TK_RESERVED, cur, p++, 1); // ポインタを一つ読み進めてから渡す
+            cur->len = 1;
             continue;
         }
 
         if (isdigit(*p))
         {
-            cur = new_token(TK_NUM, cur, p);
-            cur->val = strtol(p, &p, 10); // Reservedの場合は読み進めてから渡すがdigitの場合はvalが必要なのでstrtolで読み進める
+            cur = new_token(TK_NUM, cur, p, 0);
+            char *q = p;
+            cur->val = strtol(p, &p, 10);
+            cur->len = p - q;
             continue;
         }
 
         error("Unable to tokenize.");
     }
 
-    new_token(TK_EOF, cur, p);
+    new_token(TK_EOF, cur, p, 0);
     return head.next;
 }
 
@@ -129,6 +156,12 @@ typedef enum
     ND_SUB,
     ND_MUL,
     ND_DIV,
+    ND_EQ,  // ==
+    ND_NEQ, // "!="
+    ND_LT,  // <
+    // ND_GT,  // > -> 必要ないかも
+    ND_LEQ, // <=
+    // ND_GEQ, // >= ->　上と同様. 必要ないかも
     ND_NUM,
 } NodeKind;
 
@@ -142,6 +175,9 @@ struct Node
     int val; // kindがNUMのときだけ使う
 };
 
+Node *equality();
+Node *relational();
+Node *add();
 Node *primary();
 Node *unary();
 Node *expr();
@@ -166,13 +202,68 @@ Node *new_node_num(int val)
 
 Node *expr()
 {
+    return equality();
+}
+
+Node *equality()
+{
+    Node *node = relational();
+
+    for (;;)
+    {
+        if (consume("=="))
+        {
+            node = new_node(ND_EQ, node, relational());
+        }
+        else if (consume("!="))
+        {
+            node = new_node(ND_NEQ, node, relational());
+        }
+        else
+        {
+            return node;
+        }
+    }
+}
+
+Node *relational()
+{
+    Node *node = add();
+
+    for (;;)
+    {
+        if (consume("<"))
+        {
+            node = new_node(ND_LT, node, add());
+        }
+        else if (consume("<="))
+        {
+            node = new_node(ND_LEQ, node, add());
+        }
+        else if (consume(">"))
+        {
+            node = new_node(ND_LT, add(), node);
+        }
+        else if (consume(">="))
+        {
+            node = new_node(ND_LEQ, add(), node);
+        }
+        else
+        {
+            return node;
+        }
+    }
+}
+
+Node *add()
+{
     Node *node = mul();
 
     for (;;)
     {
-        if (consume('+'))
+        if (consume("+"))
             node = new_node(ND_ADD, node, mul());
-        else if (consume('-'))
+        else if (consume("-"))
             node = new_node(ND_SUB, node, mul());
         else
             return node;
@@ -185,9 +276,9 @@ Node *mul()
 
     for (;;)
     {
-        if (consume('*'))
+        if (consume("*"))
             node = new_node(ND_MUL, node, unary());
-        else if (consume('/'))
+        else if (consume("/"))
             node = new_node(ND_DIV, node, unary());
         else
             return node;
@@ -197,11 +288,11 @@ Node *mul()
 Node *unary()
 {
 
-    if (consume('+'))
+    if (consume("+"))
     {
         return primary();
     }
-    else if (consume('-'))
+    else if (consume("-"))
     {
         // -x は 0-x に置き換える.
         return new_node(ND_SUB, new_node_num(0), primary());
@@ -212,10 +303,10 @@ Node *unary()
 
 Node *primary()
 {
-    if (consume('('))
+    if (consume("("))
     {
         Node *node = expr();
-        expect(')');
+        expect(")");
         return node;
     }
 
@@ -256,6 +347,26 @@ void gen(Node *node)
         printf("    cqo\n");
         printf("    idiv rdi\n");
         break;
+    case ND_EQ:
+        printf("    cmp rax, rdi\n");
+        printf("    sete al\n");
+        printf("    movzb rax, al\n");
+        break;
+    case ND_NEQ:
+        printf("    cmp rax, rdi\n");
+        printf("    setne al\n");
+        printf("    movzb rax, al\n");
+        break;
+    case ND_LT:
+        printf("    cmp rax, rdi\n");
+        printf("    setl al\n");
+        printf("    movzb rax, al\n");
+        break;
+    case ND_LEQ:
+        printf("    cmp rax, rdi\n");
+        printf("    setle al\n");
+        printf("    movzb rax, al\n");
+        break;
     }
 
     printf("  push rax\n");
@@ -271,6 +382,7 @@ int main(int argc, char **argv)
 
     user_input = argv[1];
     token = tokenize(user_input);
+    // printf("Tokenize done.");
     Node *node = expr();
 
     printf(".intel_syntax noprefix\n");
