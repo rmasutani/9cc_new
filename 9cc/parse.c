@@ -4,27 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-typedef enum
-{
-    TK_RESERVED,
-    TK_NUM,
-    TK_EOF,
-} TokenKind;
-
-typedef struct Token Token;
-
-struct Token
-{
-    TokenKind kind;
-    Token *next;
-    int val;
-    char *str;
-    int len;
-};
-
-Token *token;
-char *user_input; // プログラムの文字列全体を保存
+#include "9cc.h"
 
 // 入力全体を表す文字列の途中を指すポインタを受け取る
 void error_at(char *loc, char *fmt, ...)
@@ -149,39 +129,6 @@ Token *tokenize(char *p)
     new_token(TK_EOF, cur, p, 0);
     return head.next;
 }
-
-typedef enum
-{
-    ND_ADD,
-    ND_SUB,
-    ND_MUL,
-    ND_DIV,
-    ND_EQ,  // ==
-    ND_NEQ, // "!="
-    ND_LT,  // <
-    // ND_GT,  // > -> 必要ないかも
-    ND_LEQ, // <=
-    // ND_GEQ, // >= ->　上と同様. 必要ないかも
-    ND_NUM,
-} NodeKind;
-
-typedef struct Node Node;
-
-struct Node
-{
-    NodeKind kind;
-    Node *lhs;
-    Node *rhs;
-    int val; // kindがNUMのときだけ使う
-};
-
-Node *equality();
-Node *relational();
-Node *add();
-Node *primary();
-Node *unary();
-Node *expr();
-Node *mul();
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs)
 {
@@ -311,87 +258,4 @@ Node *primary()
     }
 
     return new_node_num(expect_number());
-}
-
-// スタック命令のエミュレートを行う関数
-void gen(Node *node)
-{
-    if (node->kind == ND_NUM)
-    {
-        printf("    push %d\n", node->val);
-        return;
-    }
-
-    gen(node->lhs);
-    gen(node->rhs);
-
-    printf("    pop rdi\n");
-    printf("    pop rax\n");
-
-    switch (node->kind)
-    {
-    case ND_ADD:
-        printf("    add rax, rdi\n");
-        break;
-    case ND_SUB:
-        printf("    sub rax, rdi\n");
-        break;
-    case ND_MUL:
-        printf("    imul rax, rdi\n");
-        break;
-    case ND_DIV:
-        // idivは符号あり除算を行う命令。ただし idiv rax, rdi　のようには書けない
-        // idivは暗黙のうちにRDXとRAXを取って、それを合わせたものを128ビット整数とみなして、
-        // それを引数のレジスタの64ビットの値で割り、商をRAXに、余りをRDXにセットする、という
-        // 仕様になっている
-        printf("    cqo\n");
-        printf("    idiv rdi\n");
-        break;
-    case ND_EQ:
-        printf("    cmp rax, rdi\n");
-        printf("    sete al\n");
-        printf("    movzb rax, al\n");
-        break;
-    case ND_NEQ:
-        printf("    cmp rax, rdi\n");
-        printf("    setne al\n");
-        printf("    movzb rax, al\n");
-        break;
-    case ND_LT:
-        printf("    cmp rax, rdi\n");
-        printf("    setl al\n");
-        printf("    movzb rax, al\n");
-        break;
-    case ND_LEQ:
-        printf("    cmp rax, rdi\n");
-        printf("    setle al\n");
-        printf("    movzb rax, al\n");
-        break;
-    }
-
-    printf("  push rax\n");
-}
-
-int main(int argc, char **argv)
-{
-    if (argc != 2)
-    {
-        fprintf(stderr, "Wrong number of args.\n");
-        return 1;
-    }
-
-    user_input = argv[1];
-    token = tokenize(user_input);
-    // printf("Tokenize done.");
-    Node *node = expr();
-
-    printf(".intel_syntax noprefix\n");
-    printf(".globl main\n");
-    printf("main:\n");
-
-    gen(node);
-
-    printf("    pop rax\n");
-    printf("    ret\n");
-    return 0;
 }
