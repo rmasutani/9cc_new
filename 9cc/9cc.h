@@ -3,6 +3,7 @@
 typedef enum
 {
     TK_RESERVED,
+    TK_IDENT, // alphabetの小文字なら変数
     TK_NUM,
     TK_EOF,
 } TokenKind;
@@ -39,10 +40,10 @@ typedef enum
     ND_EQ,  // ==
     ND_NEQ, // "!="
     ND_LT,  // <
-    // ND_GT,  // > -> 必要ないかも
     ND_LEQ, // <=
-    // ND_GEQ, // >= ->　上と同様. 必要ないかも
     ND_NUM,
+    ND_ASSIGN,
+    ND_LVAR,
 } NodeKind;
 
 typedef struct Node Node;
@@ -53,8 +54,15 @@ struct Node
     Node *lhs;
     Node *rhs;
     int val; // kindがNUMのときだけ使う
+    int offset;
 };
 
+Node *code[100];
+
+void program();
+Node *stmt();
+Node *assign();
+Node *ident();
 Node *equality();
 Node *relational();
 Node *add();
