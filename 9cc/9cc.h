@@ -73,3 +73,19 @@ Node *mul();
 
 // Generator
 void gen(Node *node);
+
+typedef struct LVar LVar;
+
+// ローカル変数型
+struct LVar
+{
+    LVar *next;
+    char *name;
+    int len; // 名前の長さ
+    int offset;
+};
+
+// ローカル変数を持っておく連結リスト. localsは先頭を指す.
+LVar *locals;
+
+LVar *find_lvar(Token *tok);

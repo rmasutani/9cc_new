@@ -30,6 +30,7 @@ assert() {
 # assert 1 '10 <= 10'
 # assert 0 '11 < 10'
 
+assert 1 "var=1;var;"
 assert 2 "a=1;a+1;"
 
 echo OK

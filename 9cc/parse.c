@@ -85,6 +85,22 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len)
     return tok;
 }
 
+char *strndup(const char *s, size_t n)
+{
+    char *p;
+    size_t n1;
+
+    for (n1 = 0; n1 < n && s[n1] != '\0'; n1++)
+        continue;
+    p = malloc(n + 1);
+    if (p != NULL)
+    {
+        memcpy(p, s, n1);
+        p[n1] = '\0';
+    }
+    return p;
+}
+
 Token *tokenize(char *p)
 {
     // printf("tokenization start");
@@ -116,9 +132,18 @@ Token *tokenize(char *p)
             continue;
         }
 
-        if ('a' <= *p && *p <= 'z')
+        // ローカル変数の読み込み
+        // 1文字目は alphabet もしくは underscore
+        if (isalpha(*p) || *p == '_')
         {
-            cur = new_token(TK_IDENT, cur, p++, 1);
+            char *q = p;
+            while (isalpha(*q) || isdigit(*q) || *q == '_')
+                q++;
+
+            int len = q - p;
+            char *name = strndup(p, len);
+            cur = new_token(TK_IDENT, cur, name, len);
+            p += len;
             continue;
         }
 
@@ -308,9 +333,35 @@ Node *primary()
     {
         Node *node = calloc(1, sizeof(Node));
         node->kind = ND_LVAR;
-        node->offset = (tok->str[0] - 'a' + 1) * 8;
+
+        LVar *lvar = find_lvar(tok);
+        if (lvar)
+        {
+            node->offset = lvar->offset;
+        }
+        else
+        {
+            // printf("Locals offset: %d\n", locals->offset);
+            lvar = calloc(1, sizeof(LVar));
+            lvar->next = locals;
+            lvar->name = tok->str;
+            lvar->len = tok->len;
+            lvar->offset = locals->offset + 8;
+
+            node->offset = lvar->offset;
+            locals = lvar;
+        }
+
         return node;
     }
 
     return new_node_num(expect_number());
+}
+
+LVar *find_lvar(Token *tok)
+{
+    for (LVar *var = locals; var; var = var->next)
+        if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
+            return var;
+    return NULL;
 }
