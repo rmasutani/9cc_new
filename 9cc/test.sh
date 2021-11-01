@@ -32,5 +32,6 @@ assert() {
 
 assert 1 "var=1;var;"
 assert 2 "a=1;a+1;"
+assert 2 "a=1;return a+1;"
 
 echo OK

@@ -52,6 +52,15 @@ Token *consume_ident()
     return tmp_token;
 }
 
+bool consume_return()
+{
+    if (token->kind != TK_RETURN)
+        return false;
+
+    token = token->next;
+    return true;
+}
+
 void expect(char *op)
 {
     if (token->kind != TK_RESERVED || strlen(op) != token->len ||
@@ -113,6 +122,13 @@ Token *tokenize(char *p)
         if (isspace(*p))
         {
             p++;
+            continue;
+        }
+
+        if (strncmp(p, "return", 6) == 0 && !isalnum(p[6]))
+        {
+            cur = new_token(TK_RETURN, cur, p, 6);
+            p += 6;
             continue;
         }
 
