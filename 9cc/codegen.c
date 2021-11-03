@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include "9cc.h"
 
+int label_id = 0;
+
 void gen_lval(Node *node)
 {
     if (node->kind != ND_LVAR)
@@ -19,16 +21,6 @@ void gen_lval(Node *node)
 // スタック命令のエミュレートを行う関数
 void gen(Node *node)
 {
-    if (node->kind == ND_RETURN)
-    {
-        gen(node->lhs);
-        printf("    pop rax\n");
-        printf("    mov rsp, rbp\n");
-        printf("    pop rbp\n");
-        printf("    ret\n");
-        return;
-    }
-
     switch (node->kind)
     {
     case ND_NUM:
@@ -48,6 +40,22 @@ void gen(Node *node)
         printf("    pop rax\n");
         printf("    mov [rax], rdi\n");
         printf("    push rdi\n");
+        return;
+    case ND_RETURN:
+        gen(node->lhs);
+        printf("    pop rax\n");
+        printf("    mov rsp, rbp\n");
+        printf("    pop rbp\n");
+        printf("    ret\n");
+        return;
+    case ND_IF:
+        label_id++;
+        gen(node->lhs); // カッコ内のstatementをコンパイル. スタックトップに結果が入っている
+        printf("    pop rax\n");
+        printf("    cmp rax, 0\n");
+        printf("    je .Lend%d\n", label_id);
+        gen(node->rhs); // if (A) B のBをコンパイル
+        printf(".Lend%d\n", label_id);
         return;
     }
 
