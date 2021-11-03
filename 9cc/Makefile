@@ -18,7 +18,7 @@ test: 9cc
 	./test.sh
 
 clean: 
-	rm -f 9cc *.o *~ tmp*
+	rm -f 9cc *.o *~ tmp* core*
 
 # .PHONY ${ターゲット名} という記載で、
 # そのターゲットは、ファイルは生成しないという事を make に知らせることができる
