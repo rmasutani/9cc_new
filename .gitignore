@@ -3,7 +3,7 @@
 .ssh
 .viminfo
 *tmp/
-*.gitconfig
+.gitconfig
 .vscode
 *~
 *.o
