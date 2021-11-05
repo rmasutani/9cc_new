@@ -32,8 +32,16 @@ assert() {
 
 assert 1 "var=1;var;"
 assert 2 "a=1;a+1;"
-assert 2 "a=1;return a+1;"
-assert 1 "a=1;return a == 1;"
-assert 1 "a=1;if ( a == 1 ) return a;"
+# assert 2 "a=1;return a+1;"
+# assert 3 "a=1;return 3;"
+# assert 1 "a=1;return a == 1;"
+# assert 1 "a=1;if ( a == 1 ) return a;"
+# assert 2 "a=2;if ( a == 2 ) return a;"
+# assert 0 "return 10 > 11;"
+# assert 0 "return 10 == 11;"
+# assert 1 "11 == 11;"
+assert 10 "if (1 == 1) return 10;"
+# assert 1 "1 < 2;"
+# assert 0 "1 > 2;"
 
 echo OK

@@ -53,9 +53,9 @@ void gen(Node *node)
         gen(node->lhs); // カッコ内のstatementをコンパイル. スタックトップに結果が入っている
         printf("    pop rax\n");
         printf("    cmp rax, 0\n");
-        printf("    je .L.end.%d\n", label_id);
+        printf("    je .Lend%d\n", label_id);
         gen(node->rhs); // if (A) B のBをコンパイル
-        printf(".L.end.%d\n", label_id);
+        printf(".Lend%d:\n", label_id);
         return;
     }
 
@@ -106,5 +106,5 @@ void gen(Node *node)
         break;
     }
 
-    printf("  push rax\n");
+    printf("    push rax\n");
 }
