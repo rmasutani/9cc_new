@@ -70,11 +70,17 @@ bool consume_if()
     return true;
 }
 
+void skip_token()
+{
+    token = token->next;
+}
+
 void expect(char *op)
 {
     if (token->kind != TK_RESERVED || strlen(op) != token->len ||
         memcmp(token->str, op, token->len))
         error_at(token->str, "expected \"%s\"", op);
+    // printf("Consumed %s\n", op);
     token = token->next;
 }
 
@@ -150,7 +156,7 @@ Token *tokenize(char *p)
 
         if (strncmp(p, "else", 4) == 0 && !isalnum(p[4]))
         {
-            cur = new_token(TK_IF, cur, p, 4);
+            cur = new_token(TK_ELSE, cur, p, 4);
             p += 4;
             continue;
         }

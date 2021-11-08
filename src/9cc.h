@@ -41,6 +41,7 @@ bool consume_if();
 void expect(char *op);
 int expect_number();
 bool at_eof();
+void skip_token();
 
 // Parser
 
@@ -59,6 +60,7 @@ typedef enum
     ND_LVAR,
     ND_RETURN,
     ND_IF,
+    ND_IF_ELSE,
 } NodeKind;
 
 typedef struct Node Node;
@@ -70,6 +72,10 @@ struct Node
     Node *rhs;
     int val; // kindがNUMのときだけ使う
     int offset;
+
+    Node *cond; // kind が ND_IF または ND_IF_ELSE の時だけ使う.
+    Node *stmt;
+    Node *else_stmt;
 };
 
 Node *code[100];

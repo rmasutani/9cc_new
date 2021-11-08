@@ -43,22 +43,56 @@ void program()
 //     }
 // }
 
+bool has_else()
+{
+    // printf("Entered has_else\n");
+    Token *tmp = token;
+
+    while (tmp)
+    {
+        // printf("Kind: %d\n", tmp->kind);
+
+        if (tmp->kind == TK_ELSE)
+        {
+            // printf("Found ELSE\n");
+            return true;
+        }
+        tmp = tmp->next;
+    }
+
+    return false;
+}
+
 Node *stmt()
 {
     Node *node;
 
     if (consume_if())
     {
+        if (has_else())
+        {
+            // printf("Found ELSE\n");
+            node = calloc(1, sizeof(Node));
+            node->kind = ND_IF_ELSE;
+            expect("(");
+            node->cond = expr();
+            expect(")");
+            node->stmt = stmt();
+            skip_token();
+            node->else_stmt = stmt();
+            return node;
+        }
+
         node = calloc(1, sizeof(Node));
         node->kind = ND_IF;
         expect("(");
-        node->lhs = expr();
+        node->cond = expr();
         expect(")");
-        node->rhs = stmt();
+        node->stmt = stmt();
         return node;
     }
 
-        if (consume_return())
+    if (consume_return())
     {
         node = calloc(1, sizeof(Node));
         node->kind = ND_RETURN;
@@ -70,7 +104,7 @@ Node *stmt()
     }
 
     if (!consume(";"))
-        error_at(token->str, "expected ';', but got something else instead");
+        error_at(token->str, "expected ';'");
 
     return node;
 }

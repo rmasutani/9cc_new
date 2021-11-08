@@ -41,7 +41,11 @@ assert 2 "a=1;a+1;"
 # assert 0 "return 10 == 11;"
 # assert 1 "11 == 11;"
 assert 10 "if (1 == 1) return 10;"
+assert 10 "if (2 > 1) return 10;"
+# assert 2 "if (2 < 1) return 10;"
 # assert 1 "1 < 2;"
 # assert 0 "1 > 2;"
+
+assert 10 "if (1 < 0) return 5; else return 10;"
 
 echo OK

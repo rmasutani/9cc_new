@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 
     // while (token)
     // {
-    //     printf("%d : %s\n", token->len, token->str);
+    //     printf("%d : %s\n", token->kind, token->str);
     //     token = token->next;
     // }
 

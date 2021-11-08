@@ -50,11 +50,22 @@ void gen(Node *node)
         return;
     case ND_IF:
         label_id++;
-        gen(node->lhs); // カッコ内のstatementをコンパイル. スタックトップに結果が入っている
+        gen(node->cond); // カッコ内のstatementをコンパイル. スタックトップに結果が入っている
         printf("    pop rax\n");
         printf("    cmp rax, 0\n");
         printf("    je .Lend%d\n", label_id);
-        gen(node->rhs); // if (A) B のBをコンパイル
+        gen(node->stmt); // if (A) B のBをコンパイル
+        printf(".Lend%d:\n", label_id);
+        return;
+    case ND_IF_ELSE:
+        label_id++;
+        gen(node->cond);
+        printf("    pop rax\n");
+        printf("    cmp rax, 0\n");
+        printf("    je .Lelse%d\n", label_id);
+        gen(node->stmt);
+        printf(".Lelse%d:\n", label_id);
+        gen(node->else_stmt);
         printf(".Lend%d:\n", label_id);
         return;
     }
