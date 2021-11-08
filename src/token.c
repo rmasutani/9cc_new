@@ -70,6 +70,15 @@ bool consume_if()
     return true;
 }
 
+bool consume_while()
+{
+    if (token->kind != TK_WHILE)
+        return false;
+
+    token = token->next;
+    return true;
+}
+
 void skip_token()
 {
     token = token->next;
@@ -158,6 +167,13 @@ Token *tokenize(char *p)
         {
             cur = new_token(TK_ELSE, cur, p, 4);
             p += 4;
+            continue;
+        }
+
+        if (strncmp(p, "while", 5) == 0 && !isalnum(p[5]))
+        {
+            cur = new_token(TK_WHILE, cur, p, 5);
+            p += 5;
             continue;
         }
 

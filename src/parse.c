@@ -34,15 +34,6 @@ void program()
     code[i] = NULL;
 }
 
-// Node *new_node_ident()
-
-// void program() {
-//     // stmtがある限りリターンし続ける
-//     for (;;) {
-//         if (consume(''))
-//     }
-// }
-
 bool has_else()
 {
     // printf("Entered has_else\n");
@@ -85,6 +76,17 @@ Node *stmt()
 
         node = calloc(1, sizeof(Node));
         node->kind = ND_IF;
+        expect("(");
+        node->cond = expr();
+        expect(")");
+        node->stmt = stmt();
+        return node;
+    }
+
+    if (consume_while())
+    {
+        node = calloc(1, sizeof(Node));
+        node->kind = ND_WHILE;
         expect("(");
         node->cond = expr();
         expect(")");
