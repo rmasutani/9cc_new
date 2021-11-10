@@ -16,19 +16,6 @@ assert() {
     fi
 }
 
-# assert 0 0
-# assert 42 42
-# assert 21 "5+20-4"
-# assert 41 " 12 +34 - 5 "
-# assert 47 '5+6*7'
-# assert 15 '5*(9-6)'
-# assert 4 '(3+5)/2'
-# assert 10 '-10+20'
-# assert 1 '1 == 1'
-# assert 1 '2 > 1'
-# assert 1 '10 >= 10'
-# assert 1 '10 <= 10'
-# assert 0 '11 < 10'
 
 assert 1 "var=1;var;"
 assert 2 "a=1;a+1;"
@@ -47,5 +34,7 @@ assert 10 "if (2 > 1) return 10;"
 # assert 0 "1 > 2;"
 assert 10 "if (1 < 0) return 5; else return 10;"
 assert 10 "i = 0;  while (i < 10) i = i + 1; return i;"
+assert 10 "i = 0;  for (a = 0; a < 10; a=a+1) i = i + 1; return i;"
+assert 10 "i = 0;  a=0; for (; a < 10; a=a+1) i = i + 1; return i;"
 
 echo OK

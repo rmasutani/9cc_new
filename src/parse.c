@@ -6,6 +6,17 @@
 #include <stdlib.h>
 #include "9cc.h"
 
+Node *stmt();
+Node *assign();
+Node *ident();
+Node *equality();
+Node *relational();
+Node *add();
+Node *primary();
+Node *unary();
+Node *expr();
+Node *mul();
+
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs)
 {
     Node *node = calloc(1, sizeof(Node));
@@ -90,6 +101,35 @@ Node *stmt()
         expect("(");
         node->cond = expr();
         expect(")");
+        node->stmt = stmt();
+        return node;
+    }
+
+    if (consume_for())
+    {
+        node = calloc(1, sizeof(Node));
+        node->kind = ND_FOR;
+        expect("(");
+
+        // for (A;B;C) D の A
+        if (!consume(";"))
+        {
+            node->lhs = expr();
+            expect(";");
+        }
+        // for (A;B;C) D の B
+        if (!consume(";"))
+        {
+            node->cond = expr();
+            expect(";");
+        }
+        // for (A;B;C) D の C
+        if (!consume(")"))
+        {
+            node->rhs = expr();
+            expect(")");
+        }
+
         node->stmt = stmt();
         return node;
     }

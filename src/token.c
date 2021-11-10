@@ -6,6 +6,16 @@
 #include <stdlib.h>
 #include "9cc.h"
 
+bool consume(char *op);
+Token *consume_ident();
+bool consume_return();
+bool consume_if();
+bool consume_while();
+void expect(char *op);
+int expect_number();
+bool at_eof();
+void skip_token();
+
 // 入力全体を表す文字列の途中を指すポインタを受け取る
 void error_at(char *loc, char *fmt, ...)
 {
@@ -73,6 +83,15 @@ bool consume_if()
 bool consume_while()
 {
     if (token->kind != TK_WHILE)
+        return false;
+
+    token = token->next;
+    return true;
+}
+
+bool consume_for()
+{
+    if (token->kind != TK_FOR)
         return false;
 
     token = token->next;
@@ -174,6 +193,13 @@ Token *tokenize(char *p)
         {
             cur = new_token(TK_WHILE, cur, p, 5);
             p += 5;
+            continue;
+        }
+
+        if (strncmp(p, "for", 3) == 0 && !isalnum(p[3]))
+        {
+            cur = new_token(TK_FOR, cur, p, 3);
+            p += 3;
             continue;
         }
 

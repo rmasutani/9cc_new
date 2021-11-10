@@ -39,6 +39,7 @@ Token *consume_ident();
 bool consume_return();
 bool consume_if();
 bool consume_while();
+bool consume_for();
 void expect(char *op);
 int expect_number();
 bool at_eof();
@@ -63,6 +64,7 @@ typedef enum
     ND_IF,
     ND_IF_ELSE,
     ND_WHILE,
+    ND_FOR,
 } NodeKind;
 
 typedef struct Node Node;
@@ -75,24 +77,16 @@ struct Node
     int val; // kindがNUMのときだけ使う
     int offset;
 
-    Node *cond; // kind が ND_IF または ND_IF_ELSE の時だけ使う.
+    Node *cond;
     Node *stmt;
+
+    // if-else用
     Node *else_stmt;
 };
 
 Node *code[100];
 
 void program();
-Node *stmt();
-Node *assign();
-Node *ident();
-Node *equality();
-Node *relational();
-Node *add();
-Node *primary();
-Node *unary();
-Node *expr();
-Node *mul();
 
 // Generator
 void gen(Node *node);
